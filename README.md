@@ -3,7 +3,8 @@
 Backend for the Playball app: one Supabase project that serves the iPhone and
 Android apps for managers, coaches and parents.
 
-- `prototype/index.html` is the clickable design the apps will follow.
+- `mobile/` is the iPhone app (Expo). See `mobile/README.md`.
+- `prototype/index.html` is the clickable design the app follows.
 - `supabase/migrations/` is the database: tables, security rules and the actions the apps call.
 - `supabase/functions/send-push/` sends push notifications through Expo.
 - `supabase/seed.sql` adds the Upper Highway areas, venues and the current term.

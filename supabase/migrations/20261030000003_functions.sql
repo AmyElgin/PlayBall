@@ -538,7 +538,7 @@ $$;
 -- Every lesson on one day, for the manager's schedule screen.
 create function public.schedule_for_day(p_date date)
 returns table (
-  class_id uuid, school_name text, area_id uuid, area_name text, starts_at time, duration_min int,
+  class_id uuid, school_id uuid, school_name text, area_id uuid, area_name text, starts_at time, duration_min int,
   age_group text, coach_id uuid, coach_name text, covering boolean, child_count int, state text, reason text
 )
 language plpgsql
@@ -551,7 +551,7 @@ begin
     raise exception 'Only managers can see the full schedule';
   end if;
   return query
-  select c.id, s.name, a.id, a.name, c.starts_at, c.duration_min::int, c.age_group,
+  select c.id, s.id, s.name, a.id, a.name, c.starts_at, c.duration_min::int, c.age_group,
          x.coach, p.full_name, x.coach <> c.coach_id,
          (select count(*) from public.children ch where ch.class_id = c.id)::int,
          public.lesson_state(p_date, c.starts_at, c.duration_min, l.status),

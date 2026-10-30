@@ -157,6 +157,9 @@ select t.fails(format('select public.cancel_lessons(%L, ''all'')', :'fut'), 'per
 
 -- ------------------------------------------------------------------- push
 reset role;
+select t.ok((select count(*) from pg_constraint
+              where conname in ('swaps_from_coach_fkey', 'swaps_to_coach_fkey', 'children_parent_id_fkey')) = 3,
+            'the links the app uses to look up names exist');
 select t.ok((select count(*) from net.calls) > 0, 'new messages are sent to the push function');
 select t.ok((select bool_and(headers ->> 'x-webhook-secret' = 'test-secret') from net.calls), 'push calls carry the secret');
 select t.ok((select sum(jsonb_array_length(body -> 'ids')) from net.calls) = (select count(*) from public.notifications),
