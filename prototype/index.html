@@ -1,0 +1,569 @@
+<title>Playball Coach Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one quiet column per screen. Manager in a centred page, coach and parent inside a phone. One blue for actions, red only for cancelling. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --soft:#f0f2f5; --line:#e5e7eb; --ink:#171a21; --muted:#6a7180;
+  --primary:#1667c4; --primary-soft:#e9f1fb; --on-primary:#ffffff;
+  --red:#d33a2c; --red-soft:#fcecea; --green:#1d8a44; --green-soft:#e7f5ec; --amber:#8a5b00; --amber-soft:#fff3d6;
+  --b-red:#e5322d; --b-yellow:#ffcc1a; --b-green:#22a04b; --b-blue:#1b8fd6;
+  --font:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1115; --surface:#181b21; --soft:#20242c; --line:#2a2f38; --ink:#eef0f3; --muted:#9aa1ad;
+  --primary:#5ea8f2; --primary-soft:#1a2a3d; --on-primary:#0f1115;
+  --red:#f47366; --red-soft:#3a1f1d; --green:#5cc883; --green-soft:#17301f; --amber:#f2c35b; --amber-soft:#352a12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --surface:#181b21; --soft:#20242c; --line:#2a2f38; --ink:#eef0f3; --muted:#9aa1ad;
+  --primary:#5ea8f2; --primary-soft:#1a2a3d; --on-primary:#0f1115;
+  --red:#f47366; --red-soft:#3a1f1d; --green:#5cc883; --green-soft:#17301f; --amber:#f2c35b; --amber-soft:#352a12; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:1.6rem;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.25rem;font-weight:700}
+h3{font-size:1rem;font-weight:700}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:10px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.sm{font-size:.875rem}
+.label{font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+
+/* Top bar */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mark{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;letter-spacing:-.01em}
+.dots{display:grid;grid-template-columns:repeat(2,7px);gap:3px}
+.dots i{width:7px;height:7px;border-radius:50%}
+.dots i:nth-child(1){background:var(--b-red)}.dots i:nth-child(2){background:var(--b-yellow)}.dots i:nth-child(3){background:var(--b-green)}.dots i:nth-child(4){background:var(--b-blue)}
+.preview{display:flex;align-items:center;gap:10px}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;padding:7px 14px;border-radius:9px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+.page{max-width:1040px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.stack{display:grid;gap:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{border:0;border-radius:12px;min-height:46px;padding:0 18px;font-weight:700;cursor:pointer;background:var(--primary);color:var(--on-primary);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{filter:brightness(1.05)}
+.btn.sec{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.red{background:var(--red);color:var(--on-primary)}
+.btn.green{background:var(--green);color:var(--on-primary)}
+.btn.full{width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.text{border:0;background:none;color:var(--primary);font-weight:700;cursor:pointer;padding:6px 0}
+
+/* Tabs */
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:10px 0;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink)}
+
+/* Lists */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;cursor:pointer;min-height:64px}
+.item:last-child{border-bottom:0}
+button.item:hover{background:var(--soft)}
+.item .main{flex:1;min-width:0}
+.item .main b{display:block;font-weight:700}
+.item .time{width:56px;flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.chev{color:var(--muted);flex:none}
+.group{display:grid;gap:8px}
+.st{font-size:.85rem;font-weight:700;white-space:nowrap}
+.st.done{color:var(--green)}.st.cx{color:var(--red)}.st.wait{color:var(--amber)}.st.live{color:var(--primary)}.st.sched{color:var(--muted);font-weight:500}
+.item.off .main,.item.off .time{opacity:.5}
+
+.days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;align-items:center}
+.days button.d{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 4px;cursor:pointer;display:grid;justify-items:center;gap:0}
+.days button.d b{font-size:1.05rem}
+.days button.d span{font-size:.78rem;color:var(--muted);font-weight:600}
+.days button.d[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.days button.d[aria-pressed="true"] span{color:var(--bg);opacity:.8}
+.days button.d.today:not([aria-pressed="true"]){border-color:var(--primary)}
+.arrow{border:0;background:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:1.3rem}
+.arrow:hover{background:var(--soft)}
+
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;align-items:start}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.banner{border-radius:16px;padding:16px;display:grid;gap:12px}
+.banner.ask{background:var(--amber-soft)}
+.banner.req{background:var(--primary-soft)}
+.banner .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Phone */
+.phone-wrap{display:grid;justify-items:center;gap:12px}
+.who{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+.who select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 10px;font-weight:600;color:var(--ink)}
+.phone{width:100%;max-width:400px;background:var(--bg);border:1px solid var(--line);border-radius:36px;overflow:hidden;display:flex;flex-direction:column;min-height:720px;box-shadow:0 24px 60px rgba(20,30,50,.12)}
+.screen{flex:1;padding:24px 18px;display:grid;gap:22px;align-content:start}
+.tabbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-top:1px solid var(--line);padding-bottom:6px}
+.tabbar button{border:0;background:none;padding:10px 4px 8px;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;display:grid;justify-items:center;gap:4px;position:relative}
+.tabbar svg{width:24px;height:24px}
+.tabbar button[aria-selected="true"]{color:var(--primary)}
+.count{position:absolute;top:6px;left:calc(50% + 6px);background:var(--red);color:#fff;border-radius:999px;font-size:.7rem;min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px}
+.hello{display:grid;gap:2px}
+.big{font-size:3rem;font-weight:800;line-height:1;letter-spacing:-.02em}
+.next{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:14px}
+.next .when{font-size:1.35rem;font-weight:800;line-height:1.2}
+.next.cx{border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+.flag{display:inline-block;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:999px;justify-self:start}
+.flag.cx{background:var(--red-soft);color:var(--red)}
+.flag.ok{background:var(--green-soft);color:var(--green)}
+.msg{padding:12px 0;border-bottom:1px solid var(--line);display:grid;gap:2px}
+.msg:last-child{border-bottom:0}
+.seg.wide{display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
+.weekrow{display:flex;align-items:center;justify-content:space-between}
+@media (max-width:480px){
+  .page{padding-block:0 32px;gap:16px}
+  .phone{border:0;border-radius:0;box-shadow:none;min-height:auto;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));width:calc(100% + 2 * max(16px,env(safe-area-inset-left,0px)));max-width:none}
+  .phone-wrap .who{padding-top:12px}
+  .tabbar{position:sticky;bottom:0;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+  .top .preview .sm{display:none}
+}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,14,22,.45);z-index:50;display:grid;place-items:end center}
+@media (min-width:640px){.scrim{place-items:center}}
+.sheet{background:var(--surface);width:100%;max-width:460px;max-height:90vh;overflow:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));display:grid;gap:18px}
+@media (min-width:640px){.sheet{border-radius:24px}}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px}
+.x{border:0;background:var(--soft);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1.1rem;color:var(--muted)}
+.steps{display:flex;gap:4px}
+.steps i{height:4px;flex:1;border-radius:4px;background:var(--line)}
+.steps i.on{background:var(--primary)}
+.choices{display:grid;gap:8px}
+.choice{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:58px;width:100%}
+.choice:hover:not(:disabled){border-color:var(--primary)}
+.choice:disabled{opacity:.45;cursor:not-allowed}
+.choice b{display:block}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 16px;font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:1.3rem;cursor:pointer}
+.stepper button:disabled{opacity:.4}
+.stepper b{font-size:1.3rem;min-width:90px;text-align:center}
+.quote{background:var(--soft);border-radius:14px;padding:14px 16px;font-size:.95rem}
+.field{display:grid;gap:6px;font-weight:600;font-size:.9rem}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;width:100%;font-weight:400;font-size:1rem}
+.field textarea{min-height:76px;resize:vertical}
+.done{display:grid;justify-items:center;text-align:center;gap:10px;padding:16px 0}
+.tick{width:64px;height:64px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:0}
+details summary{cursor:pointer;font-weight:700;color:var(--primary);list-style:none;padding:6px 0}
+details summary::-webkit-details-marker{display:none}
+.kids{display:grid;margin-top:4px}
+.kids div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.err{color:var(--red);font-weight:600;font-size:.9rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;z-index:60;max-width:calc(100vw - 32px)}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.85rem;padding-top:16px;border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:rise .22s ease-out}@keyframes rise{from{transform:translateY(16px);opacity:0}}}
+</style>
+
+<div id="app"></div>
+
+<script>
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const P=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addD=(s,n)=>{const d=P(s);d.setDate(d.getDate()+n);return iso(d)};
+const mondayOf=s=>addD(s,-((P(s).getDay()+6)%7));
+const today=()=>iso(new Date());
+const wdOf=s=>(P(s).getDay()+6)%7;
+const nextSchoolDay=s=>{while(wdOf(s)>4)s=addD(s,1);return s};
+const addMin=(t,m)=>{let [h,mm]=t.split(':').map(Number);mm+=m;h+=Math.floor(mm/60);mm%=60;return pad(h)+':'+pad(mm)};
+const endTime=(k,date)=>{const d=P(date);const [h,m]=k.start.split(':').map(Number);d.setHours(h,m+k.dur);return d};
+const fmtD=s=>P(s).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+const fmtDl=s=>P(s).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
+const fmtS=s=>P(s).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+const dayWord=s=>s===today()?'Today':s===addD(today(),1)?'Tomorrow':fmtDl(s);
+const ago=t=>{const m=Math.round((Date.now()-new Date(t))/6e4);if(m<1)return'Just now';if(m<60)return m+' min ago';const h=Math.round(m/60);if(h<24)return h+'h ago';const d=Math.round(h/24);return d===1?'Yesterday':d+' days ago'};
+const hm=m=>m<60?`${m} min`:`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const AGES=['2–3 years','3–4 years','4–5 years','Grade R','Grade 1–2'];
+const REASONS=[['Rain','because of rain'],['Too hot','because of the heat'],['Coach is sick','because the coach is unwell'],['School event','because of a school event'],['Other','']];
+const KEY='playball-hub-v3';
+
+let S;
+const $c=id=>S.coaches.find(c=>c.id===id), $s=id=>S.schools.find(s=>s.id===id), $a=id=>S.areas.find(a=>a.id===id);
+const $k=id=>S.classes.find(k=>k.id===id), $p=id=>S.parents.find(p=>p.id===id);
+const kids=id=>S.children.filter(c=>c.classId===id);
+const areaOf=k=>$s(k.schoolId).areaId;
+const first=n=>n.split(' ')[0];
+const uid=()=>'x'+(++S.seq);
+const time=k=>`${k.start} – ${addMin(k.start,k.dur)}`;
+
+function termStart(){return S.termStart||addD(S.termEnd,-63)}
+function inT(t,d){return d>=t.start&&d<=addD(t.start,t.weeks*7-1)}
+function coachOn(k,d){let id=k.coachId;S.transfers.forEach(t=>{if(t.classId===k.id&&t.status==='accepted'&&inT(t,d))id=t.to});return id}
+function coverOn(k,d){return S.transfers.filter(t=>t.classId===k.id&&t.status==='accepted'&&inT(t,d)).pop()}
+function status(k,d){const r=S.sessions[k.id+'|'+d];if(r)return r.status;const e=endTime(k,d),now=new Date();if(e<now)return'unconfirmed';if(new Date(e-k.dur*6e4)<=now)return'live';return'upcoming'}
+const ST={done:['done','Done'],missed:['wait','Didn’t happen'],cancelled:['cx','Cancelled'],unconfirmed:['wait','Not confirmed'],live:['live','On now'],upcoming:['sched','']};
+const stTag=s=>ST[s][1]?`<span class="st ${ST[s][0]}">${ST[s][1]}</span>`:'';
+function each(from,to,fn){for(let m=mondayOf(from);m<=to;m=addD(m,7))S.classes.forEach(k=>{const d=addD(m,k.day);if(d>=from&&d<=to)fn(k,d)})}
+function note(to,title,body,kind,at){S.notes.unshift({id:uid(),to,title,body,kind,at:at||new Date().toISOString(),read:false})}
+function minutes(cid,prefix){let m=0;for(const key in S.sessions){const r=S.sessions[key],[kid,d]=key.split('|');if(r.status==='done'&&r.coachId===cid&&d.startsWith(prefix))m+=$k(kid).dur}return m}
+function toConfirm(cid){const o=[];each(addD(today(),-7),today(),(k,d)=>{if(coachOn(k,d)===cid&&status(k,d)==='unconfirmed')o.push({k,d})});return o.sort((a,b)=>(a.d+a.k.start).localeCompare(b.d+b.k.start))}
+function parentText(child,k,d,reason,extra){const ph=(REASONS.find(r=>r[0]===reason)||[])[1];return `${child}'s Playball at ${$s(k.schoolId).name} ${d===today()?'today':'on '+fmtDl(d)} (${k.start}) is cancelled${ph?' '+ph:''}.${extra?' '+extra:''}`}
+
+function cancelLessons(items,reason,extra,by,at){
+  at=at||new Date().toISOString();const ps=new Set();
+  items.forEach(({k,d})=>{const c=coachOn(k,d);S.sessions[k.id+'|'+d]={status:'cancelled',reason,coachId:c};
+    kids(k.id).forEach(ch=>{ps.add(ch.parentId);note('parent:'+ch.parentId,'Lesson cancelled',parentText(ch.first,k,d,reason,extra),'cancel',at)});
+    note('coach:'+c,'Lesson cancelled',`${$s(k.schoolId).name}, ${fmtD(d)} at ${k.start}. ${reason}.`,'cancel',at)});
+  S.log.unshift({at,by,reason,n:items.length,parents:ps.size,date:items[0]?.d});
+  return ps.size;
+}
+
+function seed(){
+  let r=7;const rnd=()=>{r=(r*16807)%2147483647;return(r-1)/2147483646};const pick=a=>a[Math.floor(rnd()*a.length)];
+  const t=today();
+  S={v:3,seq:100,transfers:[],sessions:{},children:[],parents:[],notes:[],log:[],
+    termEnd:(t>='2026-10-05'&&t<'2026-12-09')?'2026-12-09':addD(mondayOf(t),7*8+4),termStart:(t>='2026-10-05'&&t<'2026-12-09')?'2026-10-06':addD(mondayOf(t),-28),
+    areas:[{id:'a1',name:'Kloof'},{id:'a2',name:'Hillcrest'},{id:'a3',name:'Waterfall'}],
+    schools:[{id:'s1',name:'Kloof Pre-Primary',areaId:'a1'},{id:'s2',name:'Thomas More Primary',areaId:'a1'},{id:'s3',name:'Little Lambs Preschool',areaId:'a1'},{id:'s4',name:'Ladybird Pre-School',areaId:'a1'},
+      {id:'s5',name:'Highbury Preparatory (Weavers Nest)',areaId:'a2'},{id:'s6',name:'Tiny Achievers',areaId:'a2'},{id:'s7',name:'Little Red Hen Pre-Primary',areaId:'a2'},{id:'s8',name:'Smarty Box Pre-Primary',areaId:'a2'},
+      {id:'s9',name:'Waterfall Pre-Primary',areaId:'a3'},{id:'s10',name:'Waterfall Educare',areaId:'a3'},{id:'s11',name:'Waterfall Edufarm',areaId:'a3'},{id:'s12',name:'Bright Buttons',areaId:'a3'}],
+    coaches:[{id:'c1',name:'Thandi Mokoena',areaId:'a1'},{id:'c2',name:'Jess Naidoo',areaId:'a1'},{id:'c3',name:'Sipho Ndlovu',areaId:'a2'},
+      {id:'c4',name:'Megan Botha',areaId:'a2'},{id:'c5',name:'Liam Smith',areaId:'a3'},{id:'c6',name:'Ayesha Khan',areaId:'a3'}]};
+  const T=[['s1',0,'08:30',1,'c1'],['s1',0,'09:30',2,'c1'],['s3',2,'08:30',0,'c1'],['s2',3,'08:30',3,'c1'],['s4',4,'09:00',2,'c1'],
+    ['s2',1,'09:00',4,'c2'],['s4',1,'10:00',1,'c2'],['s3',3,'10:00',2,'c2'],['s1',4,'08:30',3,'c2'],
+    ['s5',0,'09:00',3,'c3'],['s6',1,'08:30',2,'c3'],['s7',3,'09:00',1,'c3'],['s5',4,'10:00',2,'c3'],
+    ['s8',2,'09:00',3,'c4'],['s6',0,'08:30',0,'c4'],['s7',2,'10:30',2,'c4'],
+    ['s9',0,'08:30',2,'c5'],['s10',2,'09:30',1,'c5'],['s11',3,'09:00',3,'c5'],
+    ['s12',1,'08:30',1,'c6'],['s9',4,'09:00',0,'c6'],['s10',1,'10:00',2,'c6']];
+  S.classes=T.map((x,i)=>({id:'k'+(i+1),schoolId:x[0],day:x[1],start:x[2],age:AGES[x[3]],coachId:x[4],dur:x[3]===0?45:60}));
+  const FN=['Amahle','Liam','Zoe','Thabo','Emma','Lwazi','Mia','Ethan','Kea','Noah','Ava','Isla','Kamva','Lily','Jayden','Nandi','Ruan','Chloe','Sanele','Hannah','Leah','Kai','Daniel','Ella','Musa','Josh','Aaliyah'];
+  const LN=['Nkosi','Smith','Botha','Pillay','van der Merwe','Dlamini','Naidoo','Jacobs','Ndlovu','Petersen','Khumalo','Coetzee','Govender','Steyn','Moodley','Fourie','Reddy','Brown'];
+  const AD=['Sarah','Themba','Priya','Johan','Busi','Michelle','Kabelo','Nadia','Andile','Karen','Vusi','Leigh','Zodwa','Mark'];
+  const addP=(name,phone)=>{const p={id:'p'+(S.parents.length+1),name,phone};S.parents.push(p);return p};
+  const addK=(f,l,c,p)=>S.children.push({id:'ch'+(S.children.length+1),first:f,last:l,classId:c,parentId:p.id});
+  const p1=addP('Naledi Sithole','082 555 0199');addK('Ayanda','Sithole','k1',p1);addK('Lesedi','Sithole','k9',p1);
+  const p2=addP('Megan Pretorius','083 555 0110');addK('Ruben','Pretorius','k10',p2);
+  const p3=addP('Farah Patel','071 555 0163');addK('Zara','Patel','k17',p3);
+  S.demoParents=['p1','p2','p3'];
+  S.classes.forEach(k=>{const n=7+Math.floor(rnd()*7);for(let i=0;i<n;i++){const l=pick(LN);addK(pick(FN),l,k.id,addP(pick(AD)+' '+l,'08'+(2+Math.floor(rnd()*3))+' 555 0'+pad(Math.floor(rnd()*99))+Math.floor(rnd()*9)))}});
+  const start=iso(new Date(new Date().getFullYear(),new Date().getMonth()-1,1)),cut=addD(t,-3);
+  each(start,t,(k,d)=>{if(d>cut||endTime(k,d)>new Date())return;S.sessions[k.id+'|'+d]=rnd()<.04?{status:'cancelled',reason:'Rain',coachId:k.coachId}:{status:'done',coachId:k.coachId}});
+  const nm=addD(mondayOf(t),7),lm=addD(mondayOf(t),-7);
+  S.transfers.push({id:'t1',classId:'k8',from:'c2',to:'c1',start:nm,weeks:2,status:'accepted',note:'Away on a course',at:new Date(Date.now()-2592e5).toISOString()});
+  S.transfers.push({id:'t2',classId:'k7',from:'c2',to:'c1',start:addD(nm,7),weeks:3,status:'pending',note:'Doctor’s appointments on Tuesdays',at:new Date(Date.now()-18e6).toISOString()});
+  const at=new Date(P(lm));at.setHours(6,40);
+  cancelLessons([{k:$k('k1'),d:lm},{k:$k('k2'),d:lm}],'Rain','See you next week!','Manager',at.toISOString());
+  S.notes.forEach(n=>n.read=true);
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.v===3)S=x}catch(e){}
+if(!S){seed();save()}
+
+const UI={role:'manager',coach:'c1',parent:'p1',child:null,pt:'home',mt:'schedule',ct:'lessons',day:null,mweek:0,cweek:0,sheet:null,toast:null};
+try{const r=localStorage.getItem(KEY+'-role');if(r)UI.role=r}catch(e){}
+
+const IC={
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  swap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>',
+  school:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6M5 9v11h14V9M10 20v-5h4v5"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3.5l9 7.5V21H3z"/><path d="M9.5 21v-6h5v6"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg>',
+  chev:'<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>',
+  tick:'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+};
+const opt=(v,l,s)=>`<option value="${esc(v)}"${String(v)===String(s)?' selected':''}>${esc(l)}</option>`;
+
+/* ---------- Shell ---------- */
+function render(){
+  const v=UI.role==='manager'?manager():UI.role==='coach'?coach():parent();
+  document.getElementById('app').innerHTML=`
+  <header class="top"><div class="top-in">
+    <div class="mark"><span class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Playball</div>
+    <div class="preview"><span class="sm muted">Preview as</span><div class="seg">${[['manager','Manager'],['coach','Coach'],['parent','Parent']].map(([r,l])=>`<button data-a="role" data-v="${r}" aria-pressed="${UI.role===r}">${l}</button>`).join('')}</div></div>
+  </div></header>
+  <main class="page">${v}
+  <div class="foot"><span>Concept prototype with sample coaches and children. Changes stay in this browser.</span><button class="text sm" data-a="reset">Reset sample data</button></div></main>
+  ${sheet()}${UI.toast?`<div class="toast" role="status">${esc(UI.toast)}</div>`:''}`;
+}
+function commit(){save();render()}
+let tt;function toast(t){UI.toast=t;clearTimeout(tt);tt=setTimeout(()=>{UI.toast=null;render()},3200)}
+
+/* ---------- Manager ---------- */
+function manager(){
+  const tabs=[['schedule','Schedule',IC.cal],['coaches','Coaches',IC.users],['schools','Schools',IC.school]];
+  return `<div class="phone-wrap"><span class="who">Manager app</span>
+  <div class="phone"><div class="screen">${{schedule:mSchedule,coaches:mCoaches,schools:mSchools}[UI.mt]()}</div>
+  <nav class="tabbar" role="tablist">${tabs.map(([id,l,ic])=>`<button role="tab" aria-selected="${UI.mt===id}" data-a="mt" data-v="${id}">${ic}${l}</button>`).join('')}</nav></div></div>`;
+}
+function mSchedule(){
+  const mon=addD(mondayOf(nextSchoolDay(today())),7*UI.mweek);
+  if(!UI.day||mondayOf(UI.day)!==mon)UI.day=UI.mweek===0?nextSchoolDay(today()):mon;
+  const d=UI.day;
+  const ks=S.classes.filter(k=>k.day===wdOf(d)).sort((a,b)=>a.start.localeCompare(b.start));
+  const groups=S.areas.map(a=>[a,ks.filter(k=>areaOf(k)===a.id)]).filter(g=>g[1].length);
+  return `<div class="hello"><p class="muted">${fmtDl(today())}</p><h1>Good ${new Date().getHours()<12?'morning':'afternoon'}</h1></div>
+  <button class="btn red full" data-a="cancel">Cancel lessons</button>
+  <div class="group"><div class="weekrow"><button class="arrow" data-a="mweek" data-v="-1" aria-label="Previous week">‹</button><b class="sm">${UI.mweek===0?'This week':UI.mweek===1?'Next week':'Week of '+fmtS(mon)}</b><button class="arrow" data-a="mweek" data-v="1" aria-label="Next week">›</button></div>
+  <div class="days">${DAYS.map((n,i)=>{const x=addD(mon,i);return `<button class="d${x===today()?' today':''}" data-a="day" data-v="${x}" aria-pressed="${x===d}"><span>${n.slice(0,3)}</span><b class="num">${P(x).getDate()}</b></button>`}).join('')}</div></div>
+  <h2>${dayWord(d)}${d===today()||d===addD(today(),1)?` <span class="muted" style="font-weight:500">· ${fmtS(d)}</span>`:''}</h2>
+  ${groups.length?`<div class="stack" style="gap:20px">${groups.map(([a,list])=>`<div class="group"><span class="label">${esc(a.name)}</span><div class="list">
+    ${list.map(k=>{const st=status(k,d),c=$c(coachOn(k,d)),cv=coverOn(k,d);return `<button class="item" data-a="mlesson" data-v="${k.id}" data-d="${d}">
+      <span class="time">${k.start}</span><span class="main"><b>${esc($s(k.schoolId).name)}</b><span class="sm muted">${esc(k.age)} · ${esc(first(c.name))}${cv?' (covering)':''}</span></span>${stTag(st)}${IC.chev}</button>`}).join('')}
+  </div></div>`).join('')}</div>`:'<div class="list empty">No lessons on this day.</div>'}`;
+}
+function mCoaches(){
+  const mp=today().slice(0,7);
+  const reqs=S.transfers.filter(t=>t.status!=='declined').slice(-3).reverse();
+  return `<div class="hello"><h1>Coaches</h1><p class="muted">Hours for ${new Date().toLocaleDateString('en-ZA',{month:'long'})}. Only confirmed lessons count.</p></div>
+  <div class="stack" style="gap:20px">${S.areas.map(a=>{const cs=S.coaches.filter(c=>c.areaId===a.id);return `<div class="group"><span class="label">${esc(a.name)}</span><div class="list">
+    ${cs.map(c=>{const p=toConfirm(c.id).length;return `<button class="item" data-a="mcoach" data-v="${c.id}"><span class="main"><b>${esc(c.name)}</b><span class="sm muted">${S.classes.filter(k=>k.coachId===c.id).length} lessons a week${p?` · <span class="st wait">${p} to confirm</span>`:''}</span></span><span class="num" style="font-weight:700">${hm(minutes(c.id,mp))}</span>${IC.chev}</button>`}).join('')||'<div class="empty">No coaches</div>'}
+  </div></div>`}).join('')}</div>
+  ${reqs.length?`<div class="group"><span class="label">Lesson swaps</span><div class="list">${reqs.map(t=>{const k=$k(t.classId);return `<div class="item" style="cursor:default"><span class="main"><b>${esc(first($c(t.from).name))} → ${esc(first($c(t.to).name))}</b><span class="sm muted">${esc($s(k.schoolId).name)} · ${DAYS[k.day]}s · ${t.weeks} week${t.weeks>1?'s':''} from ${fmtS(t.start)}</span></span><span class="st ${t.status==='accepted'?'done':'wait'}">${t.status==='accepted'?'Agreed':'Waiting'}</span></div>`}).join('')}</div></div>`:''}`;
+}
+function mSchools(){
+  return `<div class="hello"><h1>Schools</h1><p class="muted">Coaches can only swap lessons within the same area.</p></div>
+  <div class="stack" style="gap:20px">${S.areas.map(a=>{const ss=S.schools.filter(s=>s.areaId===a.id);return `<div class="group"><span class="label">${esc(a.name)}</span><div class="list">
+    ${ss.map(s=>{const ks=S.classes.filter(k=>k.schoolId===s.id);return `<button class="item" data-a="mschool" data-v="${s.id}"><span class="main"><b>${esc(s.name)}</b><span class="sm muted">${ks.length} class${ks.length!==1?'es':''} · ${ks.reduce((n,k)=>n+kids(k.id).length,0)} children</span></span>${IC.chev}</button>`}).join('')||'<div class="empty">No schools yet</div>'}
+  </div></div>`}).join('')}</div>
+  <div class="stack" style="gap:8px"><button class="btn sec full" data-a="term">Term dates: ${fmtS(termStart())} – ${fmtS(S.termEnd)}</button><button class="btn sec full" data-a="addschool">Add a school</button><button class="btn sec full" data-a="addarea">Add an area</button></div>`;
+}
+
+/* ---------- Coach ---------- */
+function coach(){
+  const me=$c(UI.coach);const pend=toConfirm(me.id);const reqs=S.transfers.filter(t=>t.to===me.id&&t.status==='pending');
+  const tabs=[['lessons','Lessons',IC.cal,pend.length],['hours','Hours',IC.clock,0],['swaps','Swaps',IC.swap,reqs.length]];
+  return `<div class="phone-wrap"><label class="who">Viewing as <select id="coachsel" data-ch="coach">${S.coaches.map(c=>opt(c.id,c.name,me.id)).join('')}</select></label>
+  <div class="phone"><div class="screen">${{lessons:cLessons,hours:cHours,swaps:cSwaps}[UI.ct](me,pend,reqs)}</div>
+  <nav class="tabbar" role="tablist">${tabs.map(([id,l,ic,n])=>`<button role="tab" aria-selected="${UI.ct===id}" data-a="ct" data-v="${id}">${ic}${l}${n?`<span class="count">${n}</span>`:''}</button>`).join('')}</nav></div></div>`;
+}
+function askCard({k,d}){return `<div class="banner ask"><div><b>Did this lesson happen?</b><p class="sm">${esc($s(k.schoolId).name)} · ${fmtD(d)} at ${k.start}</p></div>
+  <div class="two"><button class="btn green" data-a="yes" data-v="${k.id}" data-d="${d}">Yes</button><button class="btn sec" data-a="no" data-v="${k.id}" data-d="${d}">No</button></div></div>`}
+function cLessons(me,pend,reqs){
+  const mon=addD(mondayOf(nextSchoolDay(today())),7*UI.cweek);
+  const days=DAYS.map((n,i)=>{const d=addD(mon,i);const ks=S.classes.filter(k=>k.day===i&&(coachOn(k,d)===me.id||k.coachId===me.id)).sort((a,b)=>a.start.localeCompare(b.start));return [d,ks]}).filter(x=>x[1].length&&(UI.cweek>0||x[0]>=today()));
+  return `<div class="hello"><p class="muted">${fmtDl(today())}</p><h1>Hi ${esc(first(me.name))}</h1></div>
+  ${pend.map(askCard).join('')}
+  ${reqs.length?`<button class="banner req" data-a="ct" data-v="swaps" style="border:0;text-align:left;cursor:pointer;font:inherit;color:inherit"><b>${esc(first($c(reqs[0].from).name))} asked you to take a lesson</b><span class="sm">Tap to see the request</span></button>`:''}
+  <div class="seg" style="justify-self:start"><button data-a="cweek" data-v="0" aria-pressed="${UI.cweek===0}">This week</button><button data-a="cweek" data-v="1" aria-pressed="${UI.cweek===1}">Next week</button></div>
+  ${days.map(([d,ks])=>`<div class="group"><span class="label">${d===today()?'Today':DAYS[wdOf(d)]+' '+fmtS(d)}</span><div class="list">
+    ${ks.map(k=>{const c=coachOn(k,d),mine=c===me.id,st=status(k,d),cv=coverOn(k,d);return `<button class="item${mine&&st!=='cancelled'?'':' off'}" data-a="clesson" data-v="${k.id}" data-d="${d}"><span class="time">${k.start}</span>
+      <span class="main"><b>${esc($s(k.schoolId).name)}</b><span class="sm muted">${!mine?'Given to '+esc(first($c(c).name)):cv?'Covering for '+esc(first($c(cv.from).name)):esc(k.age)}</span></span>${st==='cancelled'?stTag(st):''}${IC.chev}</button>`}).join('')}
+  </div></div>`).join('')||'<div class="list empty">No more lessons this week.</div>'}`;
+}
+function cHours(me){
+  const mp=today().slice(0,7);const lm=new Date();lm.setMonth(lm.getMonth()-1,1);
+  const list=Object.entries(S.sessions).filter(([key,r])=>r.coachId===me.id&&r.status==='done'&&key.split('|')[1].startsWith(mp)).map(([key])=>({k:$k(key.split('|')[0]),d:key.split('|')[1]})).sort((a,b)=>b.d.localeCompare(a.d));
+  const pend=toConfirm(me.id);
+  return `<div class="hello"><p class="muted">${new Date().toLocaleDateString('en-ZA',{month:'long',year:'numeric'})}</p><div class="big num">${hm(minutes(me.id,mp))}</div><p class="muted">${list.length} lessons coached · last month ${hm(minutes(me.id,iso(lm).slice(0,7)))}</p></div>
+  ${pend.length?askCard(pend[0]):''}
+  <div class="group"><span class="label">Lessons this month</span><div class="list">${list.map(x=>`<div class="item" style="cursor:default"><span class="time sm">${fmtS(x.d)}</span><span class="main"><b>${esc($s(x.k.schoolId).name)}</b><span class="sm muted">${x.k.start} · ${esc(x.k.age)}</span></span><span class="num st done">${hm(x.k.dur)}</span></div>`).join('')||'<div class="empty">Nothing yet this month.</div>'}</div></div>`;
+}
+function cSwaps(me,pend,reqs){
+  const mine=S.transfers.filter(t=>(t.from===me.id||t.to===me.id)&&!(t.to===me.id&&t.status==='pending')).slice().reverse();
+  return `<div class="hello"><h1>Swaps</h1><p class="muted">Give a lesson to another coach in ${esc($a(me.areaId).name)}.</p></div>
+  ${reqs.map(t=>{const k=$k(t.classId);return `<div class="banner req"><div><b>${esc(first($c(t.from).name))} asked you to take a lesson</b>
+    <p class="sm">${esc($s(k.schoolId).name)} · ${DAYS[k.day]}s at ${k.start}<br>${t.weeks} week${t.weeks>1?'s':''}, starting ${fmtS(addD(t.start,k.day))}</p>${t.note?`<p class="sm muted">“${esc(t.note)}”</p>`:''}</div>
+    <div class="two"><button class="btn" data-a="accept" data-v="${t.id}">Accept</button><button class="btn sec" data-a="decline" data-v="${t.id}">Decline</button></div></div>`}).join('')}
+  <button class="btn full" data-a="give">Give a lesson away</button>
+  ${mine.length?`<div class="group"><span class="label">History</span><div class="list">${mine.map(t=>{const k=$k(t.classId),out=t.from===me.id;return `<div class="item" style="cursor:default"><span class="main"><b>${out?'To '+esc(first($c(t.to).name)):'From '+esc(first($c(t.from).name))}</b><span class="sm muted">${esc($s(k.schoolId).name)} · ${t.weeks} wk from ${fmtS(t.start)}</span></span><span class="st ${t.status==='accepted'?'done':t.status==='pending'?'wait':'sched'}">${t.status==='accepted'?'Agreed':t.status==='pending'?'Waiting':'Declined'}</span></div>`}).join('')}</div></div>`:''}`;
+}
+
+/* ---------- Parent ---------- */
+function nextOcc(k){let d=addD(mondayOf(today()),k.day);while(d<today()||(d===today()&&endTime(k,d)<new Date()))d=addD(d,7);return d}
+function parent(){
+  const isNew=UI.parent==='new',me=isNew?null:$p(UI.parent);
+  if(isNew)return phoneP(`<div class="hello"><h1>Welcome to Playball</h1><p class="muted">Sign your child up in under a minute.</p></div><button class="btn full" data-a="signup">Sign up my child</button>`,'');
+  const ch=S.children.filter(c=>c.parentId===me.id);
+  if(!ch.some(c=>c.id===UI.child))UI.child=ch[0]?.id;
+  const c=S.children.find(x=>x.id===UI.child);
+  const un=S.notes.filter(n=>n.to==='parent:'+me.id&&!n.read).length;
+  const pick=ch.length>1?`<div class="seg wide" role="tablist" aria-label="Choose a child">${ch.map(x=>`<button data-a="kid" data-v="${x.id}" aria-pressed="${x.id===UI.child}">${esc(x.first)}</button>`).join('')}</div>`:'';
+  let body;
+  if(!c)body=`<div class="hello"><h1>Hi ${esc(first(me.name))}</h1></div><button class="btn full" data-a="signup">Sign up my child</button>`;
+  else if(UI.pt==='home'){const k=$k(c.classId),d=nextOcc(k),st=status(k,d),r=S.sessions[k.id+'|'+d],cx=st==='cancelled';
+    body=`<div class="hello"><h1>Hi ${esc(first(me.name))}</h1></div>${pick}
+    <div class="next${cx?' cx':''}"><div class="row" style="justify-content:space-between"><b>${esc(c.first)}</b><span class="sm muted">${esc($s(k.schoolId).name)}</span></div>
+      <div><span class="label">Next Playball</span><div class="when">${dayWord(d)}<br>${time(k)}</div></div>
+      ${cx?`<div class="stack" style="gap:6px"><span class="flag cx">Cancelled · ${esc(r.reason)}</span><p class="sm muted">The lesson after that is ${fmtDl(addD(d,7))}.</p></div>`:`<span class="flag ok">On as normal</span>`}
+      <p class="sm muted">Every ${DAYS[k.day]} · ${esc(k.age)} · Coach ${esc(first($c(coachOn(k,d)).name))}</p></div>
+    <button class="text" data-a="pt" data-v="lessons" style="justify-self:start">See all of ${esc(c.first)}’s term dates ›</button>
+    <button class="btn sec full" data-a="signup">Add another child</button>`}
+  else if(UI.pt==='lessons'){const k=$k(c.classId);const ts=termStart();const list=[];for(let d=addD(mondayOf(ts),k.day);d<=S.termEnd;d=addD(d,7))if(d>=ts)list.push(d);
+    const nx=nextOcc(k),left=list.filter(d=>d>=nx&&status(k,d)!=='cancelled').length;
+    const months=[...new Set(list.map(d=>d.slice(0,7)))];
+    body=`<div class="hello"><h1>Term dates</h1><p class="muted">${fmtS(ts)} – ${fmtS(S.termEnd)} · ${list.length} lessons, ${left} still to come</p></div>${pick}
+    <div class="list" style="padding:4px 16px"><div class="kv"><span class="muted">School</span><b>${esc($s(k.schoolId).name)}</b></div><div class="kv"><span class="muted">Group</span><b>${esc(k.age)}</b></div><div class="kv"><span class="muted">When</span><b>${DAYS[k.day]}s, ${time(k)}</b></div></div>
+    ${months.map(m=>`<div class="group"><span class="label">${P(m+'-01').toLocaleDateString('en-ZA',{month:'long'})}</span><div class="list">${list.filter(d=>d.startsWith(m)).map(d=>{const st=status(k,d),r=S.sessions[k.id+'|'+d],past=d<nx;
+      return `<div class="item${past&&st!=='cancelled'?' off':''}" style="cursor:default;min-height:56px"><span class="main"><b>${d===today()?'Today':fmtD(d)}</b><span class="sm muted">${st==='cancelled'?'Cancelled · '+esc(r.reason):past?'Done':'Coach '+esc(first($c(coachOn(k,d)).name))}</span></span>${st==='cancelled'?'<span class="st cx">Cancelled</span>':d===nx?'<span class="st live">Next</span>':''}</div>`}).join('')}</div></div>`).join('')}`}
+  else{const msgs=S.notes.filter(n=>n.to==='parent:'+me.id);
+    body=`<div class="hello"><h1>Messages</h1></div><div class="list" style="padding:0 16px">${msgs.map(n=>`<div class="msg"><b class="sm">${esc(n.title)}</b><span class="sm">${esc(n.body)}</span><span class="sm muted">${ago(n.at)}</span></div>`).join('')||'<div class="empty">No messages yet.</div>'}</div>`}
+  const tabs=[['home','Home',IC.home,0],['lessons','Term dates',IC.cal,0],['messages','Messages',IC.chat,un]];
+  return phoneP(body,c?`<nav class="tabbar" role="tablist">${tabs.map(([id,l,ic,n])=>`<button role="tab" aria-selected="${UI.pt===id}" data-a="pt" data-v="${id}">${ic}${l}${n?`<span class="count">${n}</span>`:''}</button>`).join('')}</nav>`:'');
+}
+function phoneP(body,bar){return `<div class="phone-wrap"><label class="who">Viewing as <select id="parentsel" data-ch="parent">${S.demoParents.map(id=>opt(id,$p(id).name,UI.parent)).join('')}${opt('new','A new parent',UI.parent)}</select></label>
+  <div class="phone"><div class="screen">${body}</div>${bar}</div></div>`}
+
+/* ---------- Sheets ---------- */
+function steps(n,i){return `<div class="steps" aria-hidden="true">${Array.from({length:n},(_,j)=>`<i class="${j<=i?'on':''}"></i>`).join('')}</div>`}
+function head(title,back){return `<div class="sheet-h">${back?`<button class="text" data-a="back">‹ Back</button>`:'<span></span>'}<button class="x" data-a="close" aria-label="Close">✕</button></div><h2>${title}</h2>`}
+function doneView(title,sub){return `<div class="done"><span class="tick">${IC.tick}</span><h2>${title}</h2><p class="muted">${sub}</p></div><button class="btn full" data-a="close">Done</button>`}
+
+function cxItems(s){const wd=wdOf(s.date);if(wd>4)return[];let ks=S.classes.filter(k=>k.day===wd&&!['cancelled','done'].includes(status(k,s.date)));
+  if(s.scope==='area')ks=ks.filter(k=>areaOf(k)===s.target);if(s.scope==='school')ks=ks.filter(k=>k.schoolId===s.target);if(s.scope==='lesson')ks=ks.filter(k=>k.id===s.target);
+  return ks.map(k=>({k,d:s.date}))}
+function cxParents(items){const ps=new Set();items.forEach(({k})=>kids(k.id).forEach(c=>ps.add(c.parentId)));return ps.size}
+
+function sheet(){
+  const s=UI.sheet;if(!s)return'';let h='';
+  if(s.type==='cancel'){
+    if(s.step==='what')h=head('What do you want to cancel?')+steps(4,0)+`<div class="choices">${[['area','Everything in an area','For example, rain in Hillcrest'],['school','One school',''],['lesson','One lesson',''],['all','Every lesson','All areas on one day']].map(([v,t,sub])=>`<button class="choice" data-a="set" data-k="scope" data-v="${v}" data-next="day"><span><b>${t}</b>${sub?`<span class="sm muted">${sub}</span>`:''}</span>${IC.chev}</button>`).join('')}</div>`;
+    else if(s.step==='day'){const t=nextSchoolDay(today()),t2=nextSchoolDay(addD(t,1));
+      h=head('Which day?',1)+steps(4,1)+`<div class="choices">${[[t,dayWord(t)],[t2,dayWord(t2)]].map(([v,l])=>`<button class="choice" data-a="set" data-k="date" data-v="${v}" data-next="${s.scope==='all'?'why':'which'}"><b>${l}</b>${IC.chev}</button>`).join('')}</div>
+      <label class="field">Another day<input type="date" id="cxdate" data-ch="cxdate" value="${s.date||''}" min="${today()}"></label>`}
+    else if(s.step==='which'){const wd=wdOf(s.date);let opts;
+      if(s.scope==='area')opts=S.areas.map(a=>[a.id,a.name,cxItems({...s,target:a.id}).length]);
+      else if(s.scope==='school')opts=S.schools.map(x=>[x.id,x.name,cxItems({...s,target:x.id}).length]).filter(o=>S.classes.some(k=>k.schoolId===o[0]&&k.day===wd));
+      else opts=S.classes.filter(k=>k.day===wd).sort((a,b)=>a.start.localeCompare(b.start)).map(k=>[k.id,`${k.start} · ${$s(k.schoolId).name}`,cxItems({...s,target:k.id}).length]);
+      h=head(s.scope==='area'?'Which area?':s.scope==='school'?'Which school?':'Which lesson?',1)+steps(4,2)+`<p class="muted">${dayWord(s.date)}</p>
+      <div class="choices">${opts.map(([v,l,n])=>`<button class="choice" data-a="set" data-k="target" data-v="${v}" data-next="why" ${n?'':'disabled'}><b>${esc(l)}</b><span class="sm muted">${n?(s.scope==='lesson'?'':n+' lesson'+(n>1?'s':'')):'Nothing to cancel'}</span></button>`).join('')||'<div class="empty">No lessons on this day.</div>'}</div>`}
+    else if(s.step==='why')h=head('Why is it cancelled?',!s.fixed)+steps(4,3)+`<div class="choices">${REASONS.map(([r])=>`<button class="choice" data-a="set" data-k="reason" data-v="${r}" data-next="check"><b>${r}</b>${IC.chev}</button>`).join('')}</div>`;
+    else if(s.step==='check'){const items=cxItems(s),n=cxParents(items),k=items[0]?.k;
+      h=head('Check and send',1)+`<p><b>${items.length} lesson${items.length!==1?'s':''}</b> ${s.date===today()?'today':'on '+fmtDl(s.date)}. <b>${n} parents</b> will get this message:</p>
+      <div class="quote">${k?esc(parentText('[Child]',k,s.date,s.reason,s.extra)):''}</div>
+      <label class="field">Add a note (optional)<textarea id="cxextra" data-bind="extra" placeholder="e.g. We will make it up at the end of term.">${esc(s.extra||'')}</textarea></label>
+      <button class="btn red full" data-a="sendcx" ${items.length?'':'disabled'}>Send to ${n} parents</button>`}
+    else if(s.step==='sent')h=doneView('Parents have been told',`${s.result} parents and the coaches got a message.`);
+  }
+  else if(s.type==='mlesson'){const k=$k(s.id),st=status(k,s.d),c=$c(coachOn(k,s.d)),cv=coverOn(k,s.d);const peers=S.coaches.filter(x=>x.areaId===areaOf(k));
+    h=head(esc($s(k.schoolId).name))+`<div><div class="kv"><span class="muted">When</span><b>${dayWord(s.d)}, ${time(k)}</b></div><div class="kv"><span class="muted">Age group</span><b>${esc(k.age)}</b></div>
+    <div class="kv"><span class="muted">Coach</span><b>${esc(c.name)}${cv?' (covering)':''}</b></div><div class="kv"><span class="muted">Status</span>${stTag(st)||'<b>Scheduled</b>'}</div></div>
+    <label class="field">Regular coach<select id="mcoach" data-ch="regcoach" data-v="${k.id}">${peers.map(x=>opt(x.id,x.name,k.coachId)).join('')}</select></label>
+    <details><summary>See the ${kids(k.id).length} children</summary><div class="kids">${kids(k.id).map(ch=>`<div><span>${esc(ch.first+' '+ch.last)}</span><span class="muted">${esc($p(ch.parentId).phone)}</span></div>`).join('')}</div></details>
+    ${['upcoming','live','unconfirmed'].includes(st)?`<button class="btn red full" data-a="cxthis" data-v="${k.id}" data-d="${s.d}">Cancel this lesson</button>`:''}`}
+  else if(s.type==='mcoach'){const c=$c(s.id);const ks=S.classes.filter(k=>k.coachId===c.id).sort((a,b)=>a.day-b.day||a.start.localeCompare(b.start));const lm=new Date();lm.setMonth(lm.getMonth()-1,1);
+    h=head(esc(c.name))+`<div class="row" style="gap:28px"><div><span class="label">This month</span><div style="font-size:1.8rem;font-weight:800" class="num">${hm(minutes(c.id,today().slice(0,7)))}</div></div><div><span class="label">Last month</span><div style="font-size:1.8rem;font-weight:800" class="num muted">${hm(minutes(c.id,iso(lm).slice(0,7)))}</div></div></div>
+    <label class="field">Area<select id="carea" data-ch="carea" data-v="${c.id}">${S.areas.map(a=>opt(a.id,a.name,c.areaId)).join('')}</select></label>
+    <div class="group"><span class="label">Weekly lessons</span><div>${ks.map(k=>`<div class="kv"><span>${DAYS[k.day].slice(0,3)} ${k.start}</span><b>${esc($s(k.schoolId).name)}</b></div>`).join('')}</div></div>`}
+  else if(s.type==='mschool'){const sc=$s(s.id);const ks=S.classes.filter(k=>k.schoolId===sc.id).sort((a,b)=>a.day-b.day||a.start.localeCompare(b.start));
+    h=head(esc(sc.name))+`<label class="field">Area<select id="sarea" data-ch="sarea" data-v="${sc.id}">${S.areas.map(a=>opt(a.id,a.name,sc.areaId)).join('')}</select></label>
+    <div class="group"><span class="label">Classes</span>${ks.map(k=>`<details><summary style="color:var(--ink)">${DAYS[k.day]} ${k.start} · ${esc(k.age)} <span class="muted" style="font-weight:500">· ${kids(k.id).length} children</span></summary><div class="kids">${kids(k.id).map(ch=>`<div><span>${esc(ch.first+' '+ch.last)}</span><span class="muted">${esc($p(ch.parentId).name)}</span></div>`).join('')}</div></details>`).join('')||'<p class="muted">No classes yet.</p>'}</div>`}
+  else if(s.type==='addschool')h=head('Add a school')+`<label class="field">School name<input id="nsname" data-bind="name" value="${esc(s.name||'')}" placeholder="e.g. Simon Peter Pre-School"></label><label class="field">Area<select id="nsarea" data-bind="area">${S.areas.map(a=>opt(a.id,a.name,s.area)).join('')}</select></label>${s.err?`<p class="err">${s.err}</p>`:''}<button class="btn full" data-a="saveschool">Add school</button>`;
+  else if(s.type==='termdates')h=head('Term dates')+`<p class="muted">Parents see every lesson in this term. Coaches use it for “rest of term” swaps.</p><label class="field">First day of term<input type="date" id="tstart" data-bind="start" value="${s.start}"></label><label class="field">Last day of term<input type="date" id="tend" data-bind="end" value="${s.end}"></label>${s.err?`<p class="err">${s.err}</p>`:''}<button class="btn full" data-a="saveterm">Save term dates</button>`;
+  else if(s.type==='addarea')h=head('Add an area')+`<p class="muted">Coaches can only swap lessons with coaches in the same area.</p><label class="field">Area name<input id="naname" data-bind="name" value="${esc(s.name||'')}" placeholder="e.g. Gillitts"></label>${s.err?`<p class="err">${s.err}</p>`:''}<button class="btn full" data-a="savearea">Add area</button>`;
+  else if(s.type==='clesson'){const k=$k(s.id),me=UI.coach,c=coachOn(k,s.d),st=status(k,s.d),mine=c===me;
+    h=head(esc($s(k.schoolId).name))+`<div><div class="kv"><span class="muted">When</span><b>${dayWord(s.d)}, ${time(k)}</b></div><div class="kv"><span class="muted">Age group</span><b>${esc(k.age)}</b></div>${!mine?`<div class="kv"><span class="muted">Coach</span><b>${esc($c(c).name)}</b></div>`:''}${st==='cancelled'?`<div class="kv"><span class="muted">Status</span>${stTag(st)}</div>`:''}</div>
+    ${mine&&st==='unconfirmed'?askCard({k,d:s.d}):''}
+    ${mine&&k.coachId===me&&st==='upcoming'?`<button class="btn full" data-a="give" data-v="${k.id}" data-d="${s.d}">Give this lesson away</button>`:''}
+    ${mine&&['upcoming','live'].includes(st)?`<button class="btn sec full" data-a="ccancel" data-v="${k.id}" data-d="${s.d}">Cancel this lesson</button>`:''}
+    <details><summary>See the ${kids(k.id).length} children</summary><div class="kids">${kids(k.id).map(ch=>`<div><span>${esc(ch.first+' '+ch.last)}</span><span class="muted">${esc($p(ch.parentId).phone)}</span></div>`).join('')}</div></details>`}
+  else if(s.type==='no'){const k=$k(s.id);
+    h=head('What happened?')+`<p class="muted">${esc($s(k.schoolId).name)} · ${fmtD(s.d)} at ${k.start}</p><div class="choices">${['Rain','The school cancelled','Children were on an outing','I was sick','Something else'].map(r=>`<button class="choice" data-a="saveno" data-v="${r}"><b>${r}</b></button>`).join('')}</div><p class="sm muted">This lesson won’t count towards your hours. Your manager will see why.</p>`}
+  else if(s.type==='ccancel'){const k=$k(s.id);
+    if(s.step==='sent')h=doneView('Lesson cancelled',`${s.result} parents and your manager were told.`);
+    else h=head('Why are you cancelling?')+`<p class="muted">${esc($s(k.schoolId).name)} · ${dayWord(s.d)} at ${k.start}</p><div class="choices">${REASONS.map(([r])=>`<button class="choice" data-a="saveccx" data-v="${r}"><b>${r}</b>${IC.chev}</button>`).join('')}</div><p class="sm muted">The parents of ${kids(k.id).length} children will get a message straight away.</p>`}
+  else if(s.type==='give'){const me=$c(UI.coach);const k=s.cls&&$k(s.cls);
+    if(s.step==='lesson'){const ks=S.classes.filter(x=>x.coachId===me.id).sort((a,b)=>a.day-b.day||a.start.localeCompare(b.start));
+      h=head('Which lesson?')+steps(3,0)+`<div class="choices">${ks.map(x=>`<button class="choice" data-a="set" data-k="cls" data-v="${x.id}" data-next="who"><span><b>${DAYS[x.day]}s at ${x.start}</b><span class="sm muted">${esc($s(x.schoolId).name)} · ${esc(x.age)}</span></span>${IC.chev}</button>`).join('')}</div>`}
+    else if(s.step==='who'){const peers=S.coaches.filter(c=>c.id!==me.id&&c.areaId===areaOf(k));
+      h=head('Who should take it?',!s.fixed)+steps(3,1)+`<p class="muted">${esc($s(k.schoolId).name)} · ${DAYS[k.day]}s at ${k.start}</p>
+      <div class="choices">${peers.map(c=>{const clash=S.classes.find(x=>x.id!==k.id&&x.day===k.day&&x.coachId===c.id&&x.start<addMin(k.start,k.dur)&&addMin(x.start,x.dur)>k.start);
+        return `<button class="choice" data-a="set" data-k="to" data-v="${c.id}" data-next="when"><span><b>${esc(c.name)}</b>${clash?`<span class="sm st wait">Has ${esc($s(clash.schoolId).name)} at ${clash.start} that day</span>`:'<span class="sm muted">Free at this time</span>'}</span>${IC.chev}</button>`}).join('')||'<div class="empty">There are no other coaches in your area.</div>'}</div>
+      <p class="sm muted">Only coaches in ${esc($a(areaOf(k)).name)} are shown.</p>`}
+    else if(s.step==='when'){const weeks=[];const base=mondayOf(today());for(let i=0;i<6;i++){const m=addD(base,i*7);if(addD(m,k.day)>=today())weeks.push(m)}if(!weeks.includes(s.start))s.start=s.fixedStart&&weeks.includes(s.fixedStart)?s.fixedStart:weeks[0];
+      const termW=Math.max(1,Math.ceil((P(S.termEnd)-P(s.start))/6048e5));const n=s.term?termW:(s.weeks||1);
+      h=head('For how long?',1)+steps(3,2)+`<div class="group"><span class="label">Starting</span><div class="chips">${weeks.map(m=>`<button class="chip" data-a="set" data-k="start" data-v="${m}" aria-pressed="${m===s.start}">${fmtS(addD(m,k.day))}</button>`).join('')}</div></div>
+      <div class="group"><span class="label">How many weeks</span><div class="row" style="gap:16px"><div class="stepper"><button data-a="wk" data-v="-1" aria-label="Fewer weeks" ${s.term?'disabled':''}>−</button><b class="num">${n} week${n>1?'s':''}</b><button data-a="wk" data-v="1" aria-label="More weeks" ${s.term?'disabled':''}>+</button></div>
+      <button class="chip" data-a="term" aria-pressed="${!!s.term}">Rest of term</button></div></div>
+      <div class="quote"><b>${esc(first($c(s.to).name))}</b> will coach ${esc($s(k.schoolId).name)} on ${n===1?fmtDl(addD(s.start,k.day)):`${n} ${DAYS[k.day]}s, ${fmtS(addD(s.start,k.day))} to ${fmtS(addD(s.start,(n-1)*7+k.day))}`}.</div>
+      <label class="field">Message to ${esc(first($c(s.to).name))} (optional)<input id="givenote" data-bind="note" value="${esc(s.note||'')}" placeholder="e.g. I’m away at a wedding"></label>
+      <button class="btn full" data-a="sendgive">Send request</button>`}
+    else if(s.step==='sent')h=doneView('Request sent',`${esc(first($c(s.to).name))} will get a message to accept it. You’ll see it in Swaps.`);
+  }
+  else if(s.type==='signup'){const isNew=UI.parent==='new';
+    if(s.step==='school')h=head('Which school?')+steps(4,0)+`<div class="choices">${S.areas.map(a=>S.schools.filter(x=>x.areaId===a.id&&S.classes.some(k=>k.schoolId===x.id)).map(x=>`<button class="choice" data-a="set" data-k="school" data-v="${x.id}" data-next="age"><span><b>${esc(x.name)}</b><span class="sm muted">${esc(a.name)}</span></span>${IC.chev}</button>`).join('')).join('')}</div>`;
+    else if(s.step==='age'){const ages=[...new Set(S.classes.filter(k=>k.schoolId===s.school).map(k=>k.age))].sort((a,b)=>AGES.indexOf(a)-AGES.indexOf(b));
+      h=head('How old is your child?',1)+steps(4,1)+`<p class="muted">${esc($s(s.school).name)}</p><div class="choices">${ages.map(a=>`<button class="choice" data-a="set" data-k="age" data-v="${a}" data-next="time"><b>${a}</b>${IC.chev}</button>`).join('')}</div>`}
+    else if(s.step==='time'){const ks=S.classes.filter(k=>k.schoolId===s.school&&k.age===s.age);
+      h=head('Pick a lesson time',1)+steps(4,2)+`<p class="muted">${esc($s(s.school).name)} · ${esc(s.age)}</p><div class="choices">${ks.map(k=>`<button class="choice" data-a="set" data-k="cls" data-v="${k.id}" data-next="child"><span><b>${DAYS[k.day]}s</b><span class="sm muted">${time(k)}</span></span>${IC.chev}</button>`).join('')}</div>`}
+    else if(s.step==='child'){const k=$k(s.cls);
+      h=head('About your child',1)+steps(4,3)+`<p class="muted">${esc($s(k.schoolId).name)} · ${DAYS[k.day]}s at ${k.start}</p>
+      <label class="field">Child’s first name<input id="sufirst" data-bind="first" value="${esc(s.first||'')}"></label>
+      <label class="field">Surname<input id="sulast" data-bind="last" value="${esc(s.last??(isNew?'':$p(UI.parent).name.split(' ').slice(1).join(' ')))}"></label>
+      ${isNew?`<label class="field">Your name<input id="supname" data-bind="pname" value="${esc(s.pname||'')}" autocomplete="name"></label><label class="field">Your cellphone number<input id="suphone" data-bind="pphone" value="${esc(s.pphone||'')}" inputmode="tel" autocomplete="tel"></label>`:''}
+      <label class="field">Allergies or medical notes (optional)<input id="sumed" data-bind="med" value="${esc(s.med||'')}"></label>
+      ${s.err?`<p class="err">${s.err}</p>`:''}<button class="btn full" data-a="savesignup">Sign up</button>`}
+    else if(s.step==='sent')h=doneView(`${esc(s.first)} is signed up`,`See you on ${DAYS[$k(s.cls).day]}! You’ll get a message here if a lesson is ever cancelled.`);
+  }
+  return `<div class="scrim" data-a="scrim"><div class="sheet" role="dialog" aria-modal="true">${h}</div></div>`;
+}
+
+/* ---------- Events ---------- */
+function open(o){UI.sheet=o;render()}
+const A={
+  role:d=>{UI.role=d.v;try{localStorage.setItem(KEY+'-role',d.v)}catch(e){}render();scrollTo(0,0)},
+  reset:()=>{seed();save();UI.sheet=null;toast('Sample data reset');render()},
+  mt:d=>{UI.mt=d.v;render();scrollTo(0,0)}, ct:d=>{UI.ct=d.v;render();scrollTo(0,0)},
+  kid:d=>{UI.child=d.v;render()},
+  pt:d=>{UI.pt=d.v;if(d.v==='messages')S.notes.forEach(n=>{if(n.to==='parent:'+UI.parent)n.read=true});commit();scrollTo(0,0)},
+  day:d=>{UI.day=d.v;render()}, mweek:d=>{UI.mweek+= +d.v;UI.day=null;render()}, cweek:d=>{UI.cweek=+d.v;render()},
+  close:()=>{UI.sheet=null;render()},
+  back:()=>{const s=UI.sheet;s.history?.length?(s.step=s.history.pop()):(UI.sheet=null);render()},
+  set:d=>{const s=UI.sheet;s[d.k]=d.v;if(d.next){(s.history=s.history||[]).push(s.step);s.step=d.next}render()},
+  cancel:()=>open({type:'cancel',step:'what'}),
+  cxthis:d=>open({type:'cancel',scope:'lesson',target:d.v,date:d.d,step:'why',fixed:1}),
+  sendcx:()=>{const s=UI.sheet;s.result=cancelLessons(cxItems(s),s.reason,s.extra||'','Manager');s.step='sent';s.history=[];commit()},
+  mlesson:d=>open({type:'mlesson',id:d.v,d:d.d}), mcoach:d=>open({type:'mcoach',id:d.v}), mschool:d=>open({type:'mschool',id:d.v}),
+  addschool:()=>open({type:'addschool',area:S.areas[0].id}), addarea:()=>open({type:'addarea'}),
+  saveschool:()=>{const s=UI.sheet;if(!s.name?.trim()){s.err='Type the school’s name.';return render()}S.schools.push({id:uid(),name:s.name.trim(),areaId:s.area||S.areas[0].id});UI.sheet=null;UI.mt='schools';commit();toast('School added')},
+  savearea:()=>{const s=UI.sheet;if(!s.name?.trim()){s.err='Type the area’s name.';return render()}S.areas.push({id:uid(),name:s.name.trim()});UI.sheet=null;commit();toast('Area added')},
+  clesson:d=>open({type:'clesson',id:d.v,d:d.d}),
+  yes:d=>{S.sessions[d.v+'|'+d.d]={status:'done',coachId:UI.coach};if(UI.sheet?.type==='clesson')UI.sheet=null;commit();toast(`${hm($k(d.v).dur)} added to your hours`)},
+  no:d=>open({type:'no',id:d.v,d:d.d}),
+  saveno:d=>{const s=UI.sheet;S.sessions[s.id+'|'+s.d]={status:'missed',reason:d.v,coachId:UI.coach};note('manager','Lesson didn’t happen',`${$c(UI.coach).name}: ${$s($k(s.id).schoolId).name}, ${fmtD(s.d)}. ${d.v}.`,'missed');UI.sheet=null;commit();toast('Thanks. Your manager can see why.')},
+  ccancel:d=>open({type:'ccancel',id:d.v,d:d.d}),
+  saveccx:d=>{const s=UI.sheet;s.result=cancelLessons([{k:$k(s.id),d:s.d}],d.v,'',$c(UI.coach).name);note('manager','A coach cancelled a lesson',`${$c(UI.coach).name}: ${$s($k(s.id).schoolId).name}, ${fmtD(s.d)}. ${d.v}.`,'cancel');s.step='sent';commit()},
+  give:d=>open(d.v?{type:'give',cls:d.v,fixedStart:mondayOf(d.d),step:'who',fixed:1}:{type:'give',step:'lesson'}),
+  wk:d=>{const s=UI.sheet;s.weeks=Math.min(12,Math.max(1,(s.weeks||1)+ +d.v));render()},
+  term:()=>{if(UI.sheet?.type==='give'){UI.sheet.term=!UI.sheet.term;render()}else open({type:'termdates',start:termStart(),end:S.termEnd})},
+  saveterm:()=>{const s=UI.sheet;if(!s.start||!s.end||s.end<=s.start){s.err='The last day must be after the first day.';return render()}S.termStart=s.start;S.termEnd=s.end;UI.sheet=null;commit();toast('Term dates saved')},
+  sendgive:()=>{const s=UI.sheet,k=$k(s.cls),me=$c(UI.coach);const n=s.term?Math.max(1,Math.ceil((P(S.termEnd)-P(s.start))/6048e5)):(s.weeks||1);
+    S.transfers.push({id:uid(),classId:k.id,from:me.id,to:s.to,start:s.start,weeks:n,status:'pending',note:s.note||'',at:new Date().toISOString()});
+    note('coach:'+s.to,`${first(me.name)} asked you to take a lesson`,`${$s(k.schoolId).name}, ${DAYS[k.day]}s at ${k.start}, ${n} week${n>1?'s':''}.`,'request');s.step='sent';s.history=[];commit()},
+  accept:d=>{const t=S.transfers.find(x=>x.id===d.v);t.status='accepted';note('coach:'+t.from,`${first($c(t.to).name)} said yes`,`They will take ${$s($k(t.classId).schoolId).name} for ${t.weeks} week${t.weeks>1?'s':''}.`,'swap');commit();toast('Accepted. It’s in your lessons now.')},
+  decline:d=>{const t=S.transfers.find(x=>x.id===d.v);t.status='declined';note('coach:'+t.from,`${first($c(t.to).name)} can’t take your lesson`,'Try another coach in your area.','swap');commit();toast('Declined')},
+  signup:()=>open({type:'signup',step:'school'}),
+  savesignup:()=>{const s=UI.sheet,isNew=UI.parent==='new';const last=s.last??(isNew?'':$p(UI.parent).name.split(' ').slice(1).join(' '));
+    if(!s.first?.trim()||!last?.trim()){s.err='Please add your child’s first name and surname.';return render()}
+    if(isNew&&(!s.pname?.trim()||!s.pphone?.trim())){s.err='Please add your name and cellphone number.';return render()}
+    let p=isNew?null:$p(UI.parent);if(isNew){p={id:uid(),name:s.pname.trim(),phone:s.pphone.trim()};S.parents.push(p);S.demoParents.push(p.id);UI.parent=p.id}
+    const k=$k(s.cls);UI.pt='home';UI.child='x'+(S.seq+1);S.children.push({id:uid(),first:s.first.trim(),last:last.trim(),classId:k.id,parentId:p.id,med:s.med||''});
+    note('parent:'+p.id,`${s.first.trim()} is signed up`,`${$s(k.schoolId).name}, every ${DAYS[k.day]} at ${k.start}.`,'signup');
+    s.first=s.first.trim();s.step='sent';s.history=[];commit()}
+};
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-a]');if(!el)return;
+  if(el.dataset.a==='scrim'){if(e.target===el){UI.sheet=null;render()}return}
+  if(el.disabled)return;A[el.dataset.a]?.(el.dataset,el);
+});
+document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(b&&UI.sheet)UI.sheet[b]=e.target.value});
+document.addEventListener('change',e=>{
+  const t=e.target,a=t.dataset.ch;if(t.dataset.bind&&UI.sheet){UI.sheet[t.dataset.bind]=t.value;return}if(!a)return;
+  if(a==='coach'){UI.coach=t.value;render()}
+  else if(a==='parent'){UI.parent=t.value;UI.pt='home';UI.child=null;render()}
+  else if(a==='cxdate'&&t.value){const s=UI.sheet;if(wdOf(t.value)>4){toast('There are no lessons on weekends');return}s.date=t.value;(s.history=s.history||[]).push(s.step);s.step=s.scope==='all'?'why':'which';render()}
+  else if(a==='regcoach'){$k(t.dataset.v).coachId=t.value;commit();toast('Regular coach changed')}
+  else if(a==='carea'){$c(t.dataset.v).areaId=t.value;commit();toast('Coach moved')}
+  else if(a==='sarea'){$s(t.dataset.v).areaId=t.value;commit();toast('School moved')}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.sheet){UI.sheet=null;render()}});
+render();
+</script>
